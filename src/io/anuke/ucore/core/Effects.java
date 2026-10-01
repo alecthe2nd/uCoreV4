@@ -189,7 +189,7 @@ public class Effects{
         void render(EffectContainer effect);
     }
 
-    public class EffectParticle implements EffectRenderer{
+    public static class EffectParticle implements EffectRenderer{
 
         public static EffectContainer particleContainer = new EffectContainer();
 
@@ -225,6 +225,11 @@ public class Effects{
                         effect.data
                 );
 
+                for(ParticleProgressApplier applier: progresses){
+                    applier.apply(particleContainer);
+                }
+
+                Draw.rect(cachedRegion, particleContainer.x, particleContainer.y);
             }
         }
 
@@ -262,15 +267,21 @@ public class Effects{
 
     }
 
-    public class ParticleProgressApplier {
+    public static ParticleProgressApplier progressOfType(ParticleProgressType type){
+        return new ParticleProgressApplier(type);
+    }
 
-        private static final ParticleProgress DEFAULT_PROGRESS = EffectContainer::fin;
+    public static class ParticleProgressApplier {
 
         public ParticleProgressType type;
 
-        public ParticleProgress progressChain = DEFAULT_PROGRESS;
+        public ParticleProgress progressChain = ParticleProgress.NONE;
 
         public float from = 0, to = 1;
+
+        public ParticleProgressApplier(ParticleProgressType type){
+            this.type = type;
+        }
 
         public void apply(EffectContainer effect){
             type.set(effect, Mathf.lerp(from, to, progressChain.get(effect)));
@@ -293,6 +304,8 @@ public class Effects{
     }
 
     public interface ParticleProgress{
+
+        static final ParticleProgress NONE = EffectContainer::fin;
 
         float get(EffectContainer container);
         
