@@ -2,6 +2,7 @@ package io.anuke.ucore.core;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.math.RandomXS128;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Array;
 import io.anuke.ucore.entities.impl.EffectEntity;
@@ -14,6 +15,9 @@ import io.anuke.ucore.util.Mathf;
 import io.anuke.ucore.util.Pooling;
 
 public class Effects{
+
+    public static final RandomXS128 rand = new RandomXS128();
+
     private static final EffectContainer container = new EffectContainer();
     private static Array<Effect> effects = new Array<>();
     private static ScreenshakeProvider shakeProvider;
@@ -231,6 +235,7 @@ public class Effects{
             //Trade Offer: doesn't crash <-> doesn't draw anything
             if(cachedRegion == null)return;
 
+            rand.setSeed(effect.id);
 
             for(int i = 0; i < count; i++){
 
@@ -240,7 +245,7 @@ public class Effects{
                     applier.apply(particleContainer);
                 }
 
-                Draw.color(effect.color);
+                Draw.color(particleContainer.color);
                 Draw.rect(cachedRegion, particleContainer.x, particleContainer.y, particleContainer.size, particleContainer.size, particleContainer.rotation);
                 Draw.reset();
             }
@@ -294,7 +299,7 @@ public class Effects{
 
         public ParticleProgressType type;
 
-        public ParticleProgress progressChain = ParticleProgress.NONE;
+        public ParticleProgress progressChain = ParticleProgress.linear;
 
         public float from = 0, to = 1;
 
@@ -340,12 +345,20 @@ public class Effects{
 
     public interface ParticleProgress{
 
-        ParticleProgress NONE = EffectContainer::fin;
+        ParticleProgress linear = EffectContainer::fin;
 
         float get(EffectContainer container);
         
         static ParticleProgress constant(float value){
             return p -> value;
+        }
+
+        static ParticleProgress rand(float start, float end){
+            return p->rand.nextFloat(start, end);
+        }
+
+        static ParticleProgress rand(){
+            return p->rand.nextFloat();
         }
 
         default float getClamp(EffectContainer e){
