@@ -153,10 +153,10 @@ public class Effects{
 
         //the aspects of a particle that can be manipulated
         public float x, y, rotation, size = 8;
+        public Color color = new Color();
 
         //the aspects of a particle not manipulated
         public float time, lifetime;
-        public Color color;
         public int id;
         public Object data;
         private EffectContainer innerContainer;
@@ -164,7 +164,7 @@ public class Effects{
         public void set(int id, Color color, float life, float lifetime, float rotation, float x, float y, Object data){
             this.x = x;
             this.y = y;
-            this.color = color;
+            this.color.set(color);
             this.time = life;
             this.lifetime = lifetime;
             this.id = id;
@@ -176,7 +176,7 @@ public class Effects{
         public void set(EffectContainer other){
             this.x = other.x;
             this.y = other.y;
-            this.color = other.color;
+            this.color.set(other.color);
             this.time = other.time;
             this.lifetime = other.lifetime;
             this.id = other.id;
@@ -270,20 +270,24 @@ public class Effects{
 
     public interface ParticleProgressType{
 
-        ParticleProgressType X = (e, n)->e.x + n;
+        ParticleProgressType X = (e, n)->e.x +=n;
 
-        ParticleProgressType Y = (e, n)->e.y + n;
+        ParticleProgressType Y = (e, n)->e.y += n;
 
-        ParticleProgressType ROTATION = (e, n)->e.rotation + n;
+        ParticleProgressType ROTATION = (e, n)->e.rotation += n;
 
-        ParticleProgressType SIZE = (e, n)->e.size + n;
+        ParticleProgressType SIZE = (e, n)->e.size = n;
 
-        float set(EffectContainer container, float num);
+        void set(EffectContainer container, float num);
 
     }
 
     public static ParticleProgressApplier progressOfType(ParticleProgressType type){
         return new ParticleProgressApplier(type);
+    }
+
+    public static ParticleColorApplier progressColor(Color color){
+        return new ParticleColorApplier(color);
     }
 
     public static class ParticleProgressApplier {
@@ -318,9 +322,25 @@ public class Effects{
         }
     }
 
+    public static class ParticleColorApplier extends ParticleProgressApplier {
+
+        public Color color = new Color();
+
+        public ParticleColorApplier(Color color){
+            super(null);
+            this.color.set(color);
+        }
+
+        @Override
+        public void apply(EffectContainer effect){
+            effect.color.lerp(color, progressChain.get(effect));
+        }
+
+    }
+
     public interface ParticleProgress{
 
-        static final ParticleProgress NONE = EffectContainer::fin;
+        ParticleProgress NONE = EffectContainer::fin;
 
         float get(EffectContainer container);
         
