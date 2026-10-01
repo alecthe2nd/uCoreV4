@@ -150,7 +150,12 @@ public class Effects{
     }
 
     public static class EffectContainer implements ScaleTrait{
-        public float x, y, time, lifetime, rotation;
+
+        //the aspects of a particle that can be manipulated
+        public float x, y, rotation, size = 8;
+
+        //the aspects of a particle not manipulated
+        public float time, lifetime;
         public Color color;
         public int id;
         public Object data;
@@ -165,6 +170,19 @@ public class Effects{
             this.id = id;
             this.rotation = rotation;
             this.data = data;
+            this.size = 8;
+        }
+
+        public void set(EffectContainer other){
+            this.x = other.x;
+            this.y = other.y;
+            this.color = other.color;
+            this.time = other.time;
+            this.lifetime = other.lifetime;
+            this.id = other.id;
+            this.rotation = other.rotation;
+            this.data = other.data;
+            this.size = other.size;
         }
 
         public void scaled(float lifetime, Consumer<EffectContainer> cons){
@@ -216,20 +234,15 @@ public class Effects{
 
             for(int i = 0; i < count; i++){
 
-                particleContainer.set(
-                        effect.id,
-                        effect.color,
-                        effect.time, effect.lifetime,
-                        effect.rotation,
-                        effect.x, effect.y,
-                        effect.data
-                );
+                particleContainer.set(effect);
 
                 for(ParticleProgressApplier applier: progresses){
                     applier.apply(particleContainer);
                 }
 
-                Draw.rect(cachedRegion, particleContainer.x, particleContainer.y);
+                Draw.color(effect.color);
+                Draw.rect(cachedRegion, particleContainer.x, particleContainer.y, particleContainer.size, particleContainer.size, particleContainer.rotation);
+                Draw.reset();
             }
         }
 
@@ -262,6 +275,8 @@ public class Effects{
         ParticleProgressType Y = (e, n)->e.y + n;
 
         ParticleProgressType ROTATION = (e, n)->e.rotation + n;
+
+        ParticleProgressType SIZE = (e, n)->e.size + n;
 
         float set(EffectContainer container, float num);
 
