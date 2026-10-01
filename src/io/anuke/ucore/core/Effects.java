@@ -1,12 +1,15 @@
 package io.anuke.ucore.core;
 
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Array;
 import io.anuke.ucore.entities.impl.EffectEntity;
 import io.anuke.ucore.entities.trait.PosTrait;
 import io.anuke.ucore.entities.trait.ScaleTrait;
 import io.anuke.ucore.function.Consumer;
+import io.anuke.ucore.graphics.Draw;
+import io.anuke.ucore.util.Interp;
 import io.anuke.ucore.util.Mathf;
 import io.anuke.ucore.util.Pooling;
 
@@ -184,5 +187,305 @@ public class Effects{
 
     public static interface EffectRenderer{
         void render(EffectContainer effect);
+    }
+
+    public class EffectParticle implements EffectRenderer{
+
+        public static EffectContainer particleContainer = new EffectContainer();
+
+        public String regionName = "circle";
+
+        public TextureRegion cachedRegion = null;
+
+        public int count = 0;
+
+        public Array<ParticleProgressApplier> progresses = new Array<>();
+
+        public void render(EffectContainer effect){
+            //set if unset
+            if(cachedRegion == null){
+                cachedRegion = Draw.region(regionName);
+            }
+            //couldn't find AND no error? try for error
+            if(cachedRegion == null){
+                cachedRegion = Draw.region("error");
+            }
+            //Trade Offer: doesn't crash <-> doesn't draw anything
+            if(cachedRegion == null)return;
+
+
+            for(int i = 0; i < count; i++){
+
+                particleContainer.set(
+                        effect.id,
+                        effect.color,
+                        effect.time, effect.lifetime,
+                        effect.rotation,
+                        effect.x, effect.y,
+                        effect.data
+                );
+
+            }
+        }
+
+        public EffectParticle withCount(int count){
+            this.count = count;
+            return this;
+        }
+
+        public EffectParticle withRegion(String regionName){
+            this.regionName = regionName;
+            return this;
+        }
+
+        public EffectParticle withRegion(TextureRegion region){
+            this.cachedRegion = region;
+            return this;
+        }
+
+        public EffectParticle withProgress(ParticleProgressApplier progress){
+            this.progresses.add(progress);
+            return this;
+        }
+
+    }
+
+    public interface ParticleProgressType{
+
+        ParticleProgressType X = (e, n)->e.x + n;
+
+        ParticleProgressType Y = (e, n)->e.y + n;
+
+        ParticleProgressType ROTATION = (e, n)->e.rotation + n;
+
+        float set(EffectContainer container, float num);
+
+    }
+
+    public class ParticleProgressApplier {
+
+        private static final ParticleProgress DEFAULT_PROGRESS = EffectContainer::fin;
+
+        public ParticleProgressType type;
+
+        public ParticleProgress progressChain = DEFAULT_PROGRESS;
+
+        public float from = 0, to = 1;
+
+        public void apply(EffectContainer effect){
+            type.set(effect, Mathf.lerp(from, to, progressChain.get(effect)));
+        }
+
+        public ParticleProgressApplier from(int from){
+            this.from = from;
+            return this;
+        }
+
+        public ParticleProgressApplier to(int to){
+            this.to = to;
+            return this;
+        }
+
+        public ParticleProgressApplier progress(ParticleProgress progress){
+            this.progressChain = progress;
+            return this;
+        }
+    }
+
+    public interface ParticleProgress{
+
+        float get(EffectContainer container);
+        
+        static ParticleProgress constant(float value){
+            return p -> value;
+        }
+
+        default float getClamp(EffectContainer e){
+            return getClamp(e, true);
+        }
+
+        default float getClamp(EffectContainer e, boolean clamp){
+            return clamp ? Mathf.clamp(get(e)) : get(e);
+        }
+
+        default ParticleProgress inv(){
+            return CompatFix.inv(this);
+        }
+
+        default ParticleProgress slope(){
+            return CompatFix.slope(this);
+        }
+
+        default ParticleProgress clamp(){
+            return CompatFix.clamp(this);
+        }
+
+        default ParticleProgress add(float amount){
+            return CompatFix.add(this, amount);
+        }
+
+        default ParticleProgress add(ParticleProgress other){
+            return CompatFix.add(this, other);
+        }
+
+        default ParticleProgress delay(float amount){
+            return CompatFix.delay(this, amount);
+        }
+
+        default ParticleProgress curve(float offset, float duration){
+            return CompatFix.curve(this, offset, duration);
+        }
+
+        default ParticleProgress sustain(float offset, float grow, float sustain){
+            return CompatFix.sustain(this, offset, grow, sustain);
+        }
+
+        default ParticleProgress shorten(float amount){
+            return CompatFix.shorten(this, amount);
+        }
+
+        default ParticleProgress compress(float start, float end){
+            return CompatFix.compress(this, start, end);
+        }
+
+        default ParticleProgress blend(ParticleProgress other, float amount){
+            return CompatFix.blend(this, other, amount);
+        }
+
+        default ParticleProgress mul(ParticleProgress other){
+            return CompatFix.mul(this, other);
+        }
+
+        default ParticleProgress mul(float amount){
+            return CompatFix.mul(this, amount);
+        }
+
+        default ParticleProgress min(ParticleProgress other){
+            return CompatFix.min(this, other);
+        }
+
+        default ParticleProgress sin(float offset, float scl, float mag){
+            return CompatFix.sin(this, offset, scl, mag);
+        }
+
+        default ParticleProgress sin(float scl, float mag){
+            return CompatFix.sin(this, scl, mag);
+        }
+
+        default ParticleProgress absin(float scl, float mag){
+            return CompatFix.absin(this, scl, mag);
+        }
+
+        default ParticleProgress mod(float amount){
+            return CompatFix.mod(this, amount);
+        }
+
+        default ParticleProgress loop(float time){
+            return CompatFix.loop(this, time);
+        }
+
+        default ParticleProgress apply(ParticleProgress other, ParticleFunc func){
+            return CompatFix.apply(this, other, func);
+        }
+
+        default ParticleProgress curve(Interp interp){
+            return CompatFix.curve(this, interp);
+        }
+
+    }
+
+    public interface ParticleFunc {
+        float get(float a, float b);
+    }
+
+    /** RoboVM chokes on lambdas referencing self in default methods in interfaces, so they have to be moved into a separate class. */
+    private static class CompatFix{
+
+        static ParticleProgress inv(ParticleProgress self){
+            return p -> 1f - self.get(p);
+        }
+
+        static ParticleProgress slope(ParticleProgress self){
+            return p -> Mathf.slope(self.get(p));
+        }
+
+        static ParticleProgress clamp(ParticleProgress self){
+            return p -> Mathf.clamp(self.get(p));
+        }
+
+        static ParticleProgress add(ParticleProgress self, float amount){
+            return p -> self.get(p) + amount;
+        }
+
+        static ParticleProgress add(ParticleProgress self, ParticleProgress other){
+            return p -> self.get(p) + other.get(p);
+        }
+
+        static ParticleProgress delay(ParticleProgress self, float amount){
+            return p -> (self.get(p) - amount) / (1f - amount);
+        }
+
+        static ParticleProgress curve(ParticleProgress self, float offset, float duration){
+            return p -> (self.get(p) - offset) / duration;
+        }
+
+        static ParticleProgress sustain(ParticleProgress self, float offset, float grow, float sustain){
+            return p -> {
+                float val = self.get(p) - offset;
+                return Math.min(Math.max(val, 0f) / grow, (grow + sustain + grow - val) / grow);
+            };
+        }
+
+        static ParticleProgress shorten(ParticleProgress self, float amount){
+            return p -> self.get(p) / (1f - amount);
+        }
+
+        static ParticleProgress compress(ParticleProgress self, float start, float end){
+            return p -> Mathf.curve(self.get(p), start, end);
+        }
+
+        static ParticleProgress blend(ParticleProgress self, ParticleProgress other, float amount){
+            return p -> Mathf.lerp(self.get(p), other.get(p), amount);
+        }
+
+        static ParticleProgress mul(ParticleProgress self, ParticleProgress other){
+            return p -> self.get(p) * other.get(p);
+        }
+
+        static ParticleProgress mul(ParticleProgress self, float amount){
+            return p -> self.get(p) * amount;
+        }
+
+        static ParticleProgress min(ParticleProgress self, ParticleProgress other){
+            return p -> Math.min(self.get(p), other.get(p));
+        }
+
+        static ParticleProgress sin(ParticleProgress self, float offset, float scl, float mag){
+            return p -> self.get(p) + Mathf.sin(Timers.time() + offset, scl, mag);
+        }
+
+        static ParticleProgress sin(ParticleProgress self, float scl, float mag){
+            return p -> self.get(p) + Mathf.sin(scl, mag);
+        }
+
+        static ParticleProgress absin(ParticleProgress self, float scl, float mag){
+            return p -> self.get(p) + Mathf.absin(scl, mag);
+        }
+
+        static ParticleProgress mod(ParticleProgress self, float amount){
+            return p -> Mathf.mod(self.get(p), amount);
+        }
+
+        static ParticleProgress loop(ParticleProgress self, float time){
+            return p -> Mathf.mod(self.get(p)/time, 1);
+        }
+
+        static ParticleProgress apply(ParticleProgress self, ParticleProgress other, ParticleFunc func){
+            return p -> func.get(self.get(p), other.get(p));
+        }
+
+        static ParticleProgress curve(ParticleProgress self, Interp interp){
+            return p -> interp.apply(self.get(p));
+        }
     }
 }

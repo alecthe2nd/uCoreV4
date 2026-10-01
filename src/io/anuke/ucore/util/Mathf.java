@@ -110,6 +110,10 @@ public class Mathf{
         }
     }
 
+    public static float slope(float fin) {
+        return 1.0F - Math.abs(fin - 0.5F) * 2.0F;
+    }
+
     public static int bool(boolean b){
         return b ? 1 : 0;
     }
@@ -138,16 +142,49 @@ public class Mathf{
         return Vector2.dst(x, y, 0, 0);
     }
 
+
+    public static float sin(float radians) {
+        return MathUtils.sin(radians);
+    }
+
+    public static float cos(float radians) {
+        return MathUtils.cos(radians);
+    }
+
+    public static float sinDeg(float degrees) {
+        return MathUtils.sinDeg(degrees);
+    }
+
+    public static float cosDeg(float degrees) {
+        return MathUtils.cosDeg(degrees);
+    }
+
+    public static float absin(float scl, float mag) {
+        return absin(Timers.time(), scl, mag);
+    }
+
+    public static float absin(float in, float scl, float mag){
+        return (sin(in, scl * 2f, mag) + mag) / 2f;
+    }
+
+    public static float tan(float radians, float scl, float mag) {
+        return sin(radians / scl) / cos(radians / scl) * mag;
+    }
+
+    public static float sin(float scl, float mag) {
+        return sin(Timers.time() / scl) * mag;
+    }
+
+    public static float cos(float scl, float mag) {
+        return cos(Timers.time() / scl) * mag;
+    }
+
     public static float sin(float in, float scl, float mag){
         return MathUtils.sin(in / scl) * mag;
     }
 
     public static float cos(float in, float scl, float mag){
         return MathUtils.cos(in / scl) * mag;
-    }
-
-    public static float absin(float in, float scl, float mag){
-        return (sin(in, scl * 2f, mag) + mag) / 2f;
     }
 
     /** Returns the X (cos) component of a unit-square. Input value is in degrees. */
